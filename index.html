@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="msapplication-tap-highlight" content="no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Memory Game</title>
+<link rel="apple-touch-icon" sizes="180x180" href="images/favicons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="images/favicons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="images/favicons/favicon-16x16.png">
+<link rel="manifest" href="images/favicons/site.webmanifest">
+<link rel="mask-icon" href="images/favicons/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="shortcut icon" href="images/favicons/favicon.ico">
+<meta name="msapplication-TileColor" content="#2c48b2">
+<meta name="msapplication-config" content="images/favicons/browserconfig.xml">
+<meta name="theme-color" content="#ffffff">
+
+<link href="https://fonts.googleapis.com/css?family=Quicksand:400,500" rel="stylesheet">
+
+<style>
+*{margin:0; border:0; outline:0; padding:0; box-sizing: border-box;}
+html, body {height: 100%;}
+body{background: radial-gradient(#89c0fd 0%,#13289e 100%); font-family: 'Quicksand', sans-serif; height: 100vh; display: flex; flex-flow: row wrap; justify-content:center; align-items: center;}
+
+.game {width: 100%; max-width:768px; padding: 3vw; display: flex; flex-flow: row wrap; perspective: 500px; transform-style: preserve-3d;}
+
+.card {position: relative; cursor:pointer;  width: calc(25% - 10px); margin: 5px; height: 0; padding-bottom: calc(25% - 10px); perspective: 500px; -webkit-tap-highlight-color: transparent;}
+
+.card .inside {position: absolute;  width: 100%; height: 100%; transition: transform 0.8s; transform-style: preserve-3d;}
+.card .inside.picked, .card .inside.matched {transform: rotateY(180deg);}
+.card .inside.matched .front {border:2px solid #fff;}
+.card .inside.matched .front img{mix-blend-mode: overlay; filter: grayscale(1);}
+
+.card .front, .card .back {border-radius:10px; border: 1px solid #ddd; -webkit-backface-visibility: hidden; backface-visibility: hidden; background: transparent; position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden;}
+.card .front img, .card .back img {max-width: 100%; display: block; margin: 0 auto; max-height: 100%;}
+.card .front {transform: rotateY(-180deg);}
+.card .back {transform: rotateX(0); background: linear-gradient(140deg, #fff, #d5d5d5); border: 1px solid #ffffff; box-shadow: 1px 1px 5px rgba(0,0,0,.4);}
+
+.players{opacity:0; margin: 30px 0 0 0; text-align: center; width:100%;}
+.players.open{opacity:1;}
+.players .heading{padding: 5px; color: #fff; font-weight: 500; }
+.players .options{display: inline-flex; flex-flow: row wrap; box-shadow: 1px 1px 5px rgba(0,0,0,.4); align-items: center; justify-content: center; background: #fff; border-radius: 50px; width: auto; padding: 4px;}
+.players .option{width:63px; height:63px; border-radius:40px; box-shadow: inset 0 0 20px rgba(0,0,0,.1); margin:5px;}
+.players .option[data-color="f44336"]{background: #f44336;}
+.players .option[data-color="9c27b0"]{background: #9c27b0;}
+.players .option[data-color="03a9f4"]{background: #03a9f4;}
+.players .option[data-color="8bc34a"]{background: #8bc34a;}
+.players .option[data-color="d8c30b"]{background: #FFEB3B;}
+
+.modal-overlay {display: none; background: rgba(0, 0, 0, 0.6); position: fixed; top: 0; left: 0; width: 100%; height: 100%;}
+.modal {display: none; position: relative; width: 500px; box-shadow: 1px 1px 5px rgba(0,0,0,.4); height: 400px; max-height: 90%; max-width: 90%; min-height: 380px; margin: 0 auto; background: white; top: 50%; border-radius: 30px; transform: translateY(-50%); padding: 30px 10px;}
+.modal .winner {text-align: center; color: #fff;}
+.modal .winner .heading{font-size: 40px; margin:0 0 10px 0;}
+.modal .winner .name{font-size: 60px;}
+
+.modal[data-winColor="red"] {background:#f44336;}
+.modal[data-winColor="red_blue"]{background: linear-gradient(#f44336, #03a9f4);}
+.modal[data-winColor="red_purple"]{background: linear-gradient(#f44336, #9c27b0);}
+.modal[data-winColor="red_green"]{background: linear-gradient(#f44336, #8bc34a);}
+.modal[data-winColor="red_yellow"]{background: linear-gradient(#f44336, #FFEB3B);}
+
+.modal[data-winColor="purple"]{background: #9c27b0;}
+.modal[data-winColor="purple_red"]{background: linear-gradient(#9c27b0, #f44336);}
+.modal[data-winColor="purple_blue"]{background: linear-gradient(#9c27b0, #03a9f4);}
+.modal[data-winColor="purple_green"]{background: linear-gradient(#9c27b0, #8bc34a);}
+.modal[data-winColor="purple_yellow"]{background: linear-gradient(#9c27b0, #FFEB3B);}
+
+.modal[data-winColor="blue"]{background: #03a9f4;}
+.modal[data-winColor="blue_red"]{background: linear-gradient(#03a9f4, #f44336);}
+.modal[data-winColor="blue_purple"]{background: linear-gradient(#03a9f4, #9c27b0);}
+.modal[data-winColor="blue_green"]{background: linear-gradient(#03a9f4, #8bc34a);}
+.modal[data-winColor="blue_yellow"]{background: linear-gradient(#03a9f4, #FFEB3B);}
+
+.modal[data-winColor="green"]{background: #8bc34a;}
+.modal[data-winColor="green_red"]{background: linear-gradient(#8bc34a, #f44336);}
+.modal[data-winColor="green_purple"]{background: linear-gradient(#8bc34a, #9c27b0);}
+.modal[data-winColor="green_blue"]{background: linear-gradient(#8bc34a, #03a9f4);}
+.modal[data-winColor="green_yellow"]{background: linear-gradient(#8bc34a, #FFEB3B);}
+
+.modal[data-winColor="yellow"]{background: #FFEB3B;}
+.modal[data-winColor="yellow_red"]{background: linear-gradient(#FFEB3B, #f44336);}
+.modal[data-winColor="yellow_purple"]{background: linear-gradient(#FFEB3B, #9c27b0);}
+.modal[data-winColor="yellow_blue"]{background: linear-gradient(#FFEB3B, #03a9f4);}
+.modal[data-winColor="yellow_green"]{background: linear-gradient(#FFEB3B, #8bc34a);}
+
+.modal .restart {margin: 30px auto 10px; padding: 15px 30px; display: block; font-size: 22px; background: #fff; border-radius: 40px; color: #595959; cursor: pointer; text-transform: uppercase; box-shadow: 0px 3px 10px rgba(0,0,0,.2);}
+
+audio {display: none;}
+
+.game_picker_overlay {background: rgba(0, 0, 0, 0.6); position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index:99; display:flex; flex-flow:row wrap; align-items:center; justify-content:center;}
+.game_picker {display:flex; flex-flow:row wrap; align-items:center; justify-content:center;}
+.game_picker .heading{font-size: 30px; margin:0 0 10px 0; width:100%; color:#fff; text-align: center;}
+.game_picker .item {width: calc(28% - 10px); cursor: pointer; margin: 5px; border-radius: 10px; border: 2px solid #fff; overflow: hidden;}
+.game_picker .item img {display: block; width: 100%;}
+</style>
+</head>
+
+<body>
+<div class="game_picker_overlay">
+    <div class="game_picker">
+        <div class="heading">Choose A Theme</div>
+        <div class="item" data-game="disney_cards" onclick="Memory.init(disney_cards);"><img src="images/elsa.jpg" alt="Elsa"></div>
+        <div class="item" data-game="paw_cards" onclick="Memory.init(paw_cards);"><img src="images/paw/chase2.png" alt="Chase"></div>
+        <div class="item" data-game="incredibles_cards" onclick="Memory.init(incredibles_cards);"><img src="images/incredibles/jackjack.jpg" alt="Jack Jack"></div>
+        <div class="item" data-game="disney_emoji_cards" onclick="Memory.init(disney_emoji_cards);"><img src="images/disney_emoji/sully.png" alt="Sully"></div>
+    </div>
+</div>
+
+<div class="game"></div>
+<div class="players">
+    <div class="heading">Choose Your Color</div>
+    <div class="options">
+        <div class="option" data-color="f44336" data-name="Red"></div>
+        <div class="option" data-color="9c27b0" data-name="Purple"></div>
+        <div class="option" data-color="03a9f4" data-name="Blue"></div>
+        <div class="option" data-color="8bc34a" data-name="Green"></div>
+        <div class="option" data-color="d8c30b" data-name="Yellow"></div>
+    </div>
+</div>
+<div class="modal-overlay">
+	<div class="modal">
+		<div class="winner">
+		    <div class="heading">Winner!</div>
+		    <div class="name"></div>
+		    <button class="restart">Play Again</button>
+		</div>
+	</div>
+</div>
+
+<!-- Preload Game Sounds -->
+<audio preload="auto" class="audio_magic" >
+  <source src="audio/magic.wav">
+</audio>
+
+<script src="https://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
+<script>
+var magic = $('.audio_magic');
+
+	var Memory = {
+	    
+        gamePicker: function(){
+            this.showPicker();
+        },
+        
+		init: function(cards){
+			this.$game = $(".game");
+			this.$modal = $(".modal");
+			this.$picker = $(".game_picker");
+			this.$pickerOverlay = $(".game_picker_overlay");
+			this.$overlay = $(".modal-overlay");
+			this.$restartButton = $("button.restart");
+			this.hidePicker();
+			this.cardsArray = $.merge(cards, cards);
+			this.shuffleCards(this.cardsArray);
+			this.setup();
+		},
+        
+		shuffleCards: function(cardsArray){
+			this.$cards = $(this.shuffle(this.cardsArray));
+		},
+
+		setup: function(){
+			this.html = this.buildHTML();
+			this.$game.html(this.html);
+			this.$memoryCards = $(".card");
+			this.paused = false;
+     	    this.guess = null;
+			this.binding();
+		},
+
+		binding: function(){
+			this.$memoryCards.on("click", this.cardClicked);
+			this.$restartButton.on("click", $.proxy(this.reset, this));
+		},
+
+		cardClicked: function(){
+			var _ = Memory;
+			var $card = $(this);
+			if(!_.paused && !$card.find(".inside").hasClass("matched") && !$card.find(".inside").hasClass("picked")){
+				$card.find(".inside").addClass("picked");
+				if(!_.guess){
+					_.guess = $(this).attr("data-id");
+				} else if(_.guess == $(this).attr("data-id") && !$(this).hasClass("picked")){
+				    magic[0].play();
+					$(".picked").addClass("matched");
+					_.paused = true;
+					$(".players").addClass('open');
+					$(".players .option").click(function(){
+					    var color = $(this).data('color');
+					    var name = $(this).data('name');
+					    $(".picked.matched .front").css("background","#"+color).attr('data-name',name).parent().removeClass("picked");
+					    Memory.paused = false;
+					    $(".players").removeClass('open');
+	    				if($(".matched").length == $(".card").length){
+        					_.win();
+        				}
+					});
+					
+					_.guess = null;
+				} else {
+					_.guess = null;
+					_.paused = true;
+					setTimeout(function(){
+						$(".picked").removeClass("picked");
+						Memory.paused = false;
+					}, 600);
+				}
+
+			}
+		},
+
+		win: function(){
+			this.paused = true;
+			setTimeout(function(){
+				Memory.showModal();
+				Memory.$game.fadeOut();
+			}, 1000);
+		},
+
+        showModal: function(){
+		    var arr = [];
+            $('.front').each(function(){
+                var nm = $(this).attr('data-name');
+		        arr.push(nm);
+            });
+
+            function mode(array){
+                if (array.length == 0)
+                    return null;
+            
+                var modeMap = {},
+                    maxEl = array[0],
+                    maxCount = 1;
+            
+                for(var i = 0; i < array.length; i++){
+                    var el = array[i];
+            
+                    if (modeMap[el] == null)
+                        modeMap[el] = 1;
+                    else
+                        modeMap[el]++;
+            
+                    if (modeMap[el] > maxCount){
+                        maxEl = el;
+                        maxCount = modeMap[el];
+                    }
+                    else if (modeMap[el] == maxCount){
+                        maxEl += ' & ' + el;
+                        maxCount = modeMap[el];
+                    }
+                }
+                return maxEl;
+            }
+            
+            var winColor = mode(arr).replace(" & ", "_").toLowerCase();
+
+		    $('.winner .name').text(mode(arr));
+			this.$overlay.show();
+			this.$modal.fadeIn("slow").attr('data-winColor',winColor);
+		},
+		
+		hideModal: function(){
+			this.$overlay.hide();
+			this.$modal.hide().attr('data-winColor','');;
+		},
+		
+		showPicker: function(){
+			this.$pickerOverlay.fadeIn("slow");
+		},
+		
+		hidePicker: function(){
+			this.$pickerOverlay.hide();
+		},
+
+		reset: function(){
+			this.hideModal();
+			this.gamePicker();
+			this.shuffleCards(this.cardsArray);
+			this.setup();
+			this.$game.fadeIn("slow");
+		},
+
+
+		shuffle: function(array){
+			var counter = array.length, temp, index;
+	   	    while (counter > 0) {
+            	index = Math.floor(Math.random() * counter);
+            	counter--;
+            	temp = array[counter];
+            	array[counter] = array[index];
+            	array[index] = temp;
+	    	}
+	    	return array;
+		},
+
+		buildHTML: function(){
+			var frag = '';
+			this.$cards.each(function(k, v){
+				frag += '<div class="card" data-id="'+ v.id +'"><div class="inside">\
+				<div class="front"><img src="'+ v.img +'"\
+				alt="'+ v.name +'" /></div>\
+				<div class="back"></div></div>\
+				</div>';
+			});
+			return frag;
+		}
+	};
+
+	var disney_cards = [
+		{
+			name: "anna",
+			img: "images/anna.jpg",
+			id: 1,
+		},
+		{
+			name: "belle",
+			img: "images/belle.jpg",
+			id: 2
+		},
+		{
+			name: "cinderella",
+			img: "images/cinderella.jpeg",
+			id: 3
+		},
+		{
+			name: "elsa",
+			img: "images/elsa.jpg",
+			id: 4
+		}, 
+		{
+			name: "jasmine",
+			img: "images/jasmine.jpg",
+			id: 5
+		},
+		{
+			name: "rapunzel",
+			img: "images/rapunzel.jpg",
+			id: 6
+		},
+		{
+			name: "snow_white",
+			img: "images/snow_white.jpg",
+			id: 7
+		},
+		{
+			name: "tiana",
+			img: "images/tiana.jpg",
+			id: 8
+		}
+	];
+	
+	var paw_cards = [
+		{
+			name: "chase",
+			img: "images/paw/chase2.png",
+			id: 1,
+		},
+		{
+			name: "rocky",
+			img: "images/paw/rocky2.png",
+			id: 2,
+		},
+		{
+			name: "everest",
+			img: "images/paw/everest2.png",
+			id: 3,
+		},
+		{
+			name: "marshall",
+			img: "images/paw/marshall2.png",
+			id: 4,
+		},
+		{
+			name: "rubble",
+			img: "images/paw/rubble2.png",
+			id: 5,
+		},
+		{
+			name: "ryder",
+			img: "images/paw/ryder2.png",
+			id: 6,
+		},
+		{
+			name: "tracker",
+			img: "images/paw/tracker2.png",
+			id: 7,
+		},
+		{
+			name: "zuma",
+			img: "images/paw/zuma2.png",
+			id: 8,
+		}
+	];
+	
+    var incredibles_cards = [
+		{
+			name: "dash",
+			img: "images/incredibles/dash.jpg",
+			id: 1,
+		},
+		{
+			name: "edna",
+			img: "images/incredibles/edna.jpg",
+			id: 2,
+		},
+		{
+			name: "elastigirl",
+			img: "images/incredibles/elastigirl.jpg",
+			id: 3,
+		},
+		{
+			name: "frozone",
+			img: "images/incredibles/frozone.jpg",
+			id: 4,
+		},
+		{
+			name: "icon",
+			img: "images/incredibles/icon.jpg",
+			id: 5,
+		},
+		{
+			name: "jackjack",
+			img: "images/incredibles/jackjack.jpg",
+			id: 6,
+		},
+		{
+			name: "mrincredible",
+			img: "images/incredibles/mrincredible.jpg",
+			id: 7,
+		},
+		{
+			name: "violet",
+			img: "images/incredibles/violet.jpg",
+			id: 8,
+		}
+	];
+	
+	var disney_emoji_cards = [
+		{
+			name: "alien",
+			img: "images/disney_emoji/alien.png",
+			id: 1,
+		},
+		{
+			name: "donald",
+			img: "images/disney_emoji/donald.png",
+			id: 2,
+		},
+		{
+			name: "miney",
+			img: "images/disney_emoji/miney.png",
+			id: 3,
+		},
+		{
+			name: "olaf",
+			img: "images/disney_emoji/olaf.png",
+			id: 4,
+		},
+		{
+			name: "randall",
+			img: "images/disney_emoji/randall.png",
+			id: 5,
+		},
+		{
+			name: "simba",
+			img: "images/disney_emoji/simba.png",
+			id: 6,
+		},
+		{
+			name: "stich",
+			img: "images/disney_emoji/stich.png",
+			id: 7,
+		},
+		{
+			name: "sully",
+			img: "images/disney_emoji/sully.png",
+			id: 8,
+		}
+	];
+	
+
+</script>
+</body>
+</html>
